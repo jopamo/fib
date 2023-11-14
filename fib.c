@@ -73,6 +73,7 @@ void processArgs(int argc, char *argv[], int *binary_low, int *binary_high, int 
 double measureTime(long int (*func)(int, int, int), int arg1, int arg2, int arg3) {
   struct timespec start, end;
 
+  // CLOCK_MONOTONIC provides a monotonic time since some arbitrary start point
   clock_gettime(CLOCK_MONOTONIC, &start);
   func(arg1, arg2, arg3);
   clock_gettime(CLOCK_MONOTONIC, &end);
@@ -88,61 +89,92 @@ void printTime(double timeInSeconds) {
     // seconds
     printf("%f seconds\n", timeInSeconds);
   }
+  // 1e-3 represents 0.001 seconds (1 millisecond)
   else if (timeInSeconds >= 1e-3) {
     // milliseconds
     printf("%f milliseconds\n", timeInSeconds * 1e3);
   }
+  // 1e-6 represents 0.000001 seconds (1 microsecond)
   else if (timeInSeconds >= 1e-6) {
     // microseconds
     printf("%f microseconds\n", timeInSeconds * 1e6);
   }
+  // Assume nanoseconds at this point (1 sec = 1,000,000,000 ns)
   else {
-    // nanoseconds
     printf("%f nanoseconds\n", timeInSeconds * 1e9);
   }
 }
 
 long int fibonacci_recursive(int n) {
+  // If n is 0 or 1, first two numbers in the Fibonacci sequence are 0 and 1.
   if (n <= 1)
     return n;
 
+  // Calls itself twice. Once with (n-1) and once with (n-2), and then adds
+  // the results of these two calls. This is based on the principle that the
+  // nth Fibonacci number is the sum of the (n-1)th and (n-2)th Fibonacci numbers.
   return fibonacci_recursive(n-1) + fibonacci_recursive(n-2);
 }
 
 long int fibonacci_dynamic(int n) {
+  // If n is 0 or 1, first two numbers in the Fibonacci sequence are 0 and 1.
   if (n <= 1) {
     return n;
   }
 
+  // Create an array to store Fibonacci numbers up to n. (n+1) to accommodate
+  // all values from 0 to n.
   long int fib[n+1];
+
+  // fib[0] is the first Fibonacci number, which is 0.
+  // fib[1] is the second Fibonacci number, which is 1.
   fib[0] = 0;
   fib[1] = 1;
 
+  // Start at 2 because the first two Fibonacci numbers are already known.
   for (int i = 2; i <= n; i++) {
+    // Calculate the ith Fibonacci number.
+    // It is the sum of the two preceding numbers, fib[i-1] and fib[i-2].
     fib[i] = fib[i-1] + fib[i-2];
   }
 
+  // nth Fibonacci number
   return fib[n];
 }
 
+
 long int fibonacci_iterative(int n) {
+  // If n is 0 or 1, first two numbers in the Fibonacci sequence are 0 and 1.
   if (n <= 1) {
     return n;
   }
 
-  long int a = 0, b = 1, c;
+  // 'a' is initialized to 0 (the 0th Fibonacci number).
+  // 'b' is initialized to 1 (the 1st Fibonacci number).
+  long int a = 0, b = 1;
+
+  // 'c' is tmp
+  long int c;
+
+  // Start at 2 because the first two Fibonacci numbers are already known.
   for (int i = 2; i <= n; i++) {
+    // Next one
     c = a + b;
+
+    // Shift values
     a = b;
     b = c;
   }
 
+  // After the shift, 'b' holds the nth Fibonacci number.
+  // Return 'b', which is the requested Fibonacci number.
   return b;
 }
 
+
 int find_n_for_target_time_binary(int low, int high, int target_time_sec, double *cpu_time_used, double *total_time_used, long int *result) {
   int mid;
-  int bestN = low; // Initialize bestN with the lowest value
+  int bestN = low;
   double bestTime = 0.0;
   *cpu_time_used = 0.0;
 
