@@ -6,7 +6,6 @@
 #include <limits.h>
 #include <errno.h>
 #include <gmp.h>
-#include <mpfr.h>
 
 void printUsage(const char *programName) {
   printf("Usage: %s [OPTIONS]\n", programName);
@@ -114,7 +113,7 @@ void matrixPower(Matrix2x2 *result, Matrix2x2 *m, unsigned long long n) {
   mpz_clear(temp.d);
 }
 
-void calculateFibonacci(mpz_t fib, unsigned long long n) {
+void fibonacci_matrix(mpz_t fib, unsigned long long n) {
   if (n == 0) {
     mpz_set_ui(fib, 0);
     return;
@@ -418,7 +417,7 @@ int main(int argc, char *argv[]) {
   mpz_t fib;
   mpz_init(fib);
 
-  calculateFibonacci(fib, n_value);
+  fibonacci_matrix(fib, n_value);
 
   gmp_printf("Fibonacci number F(%llu) is %Zd\n", n_value, fib);
 
