@@ -4,6 +4,9 @@
 #include <math.h>
 #include <string.h>
 #include <limits.h>
+#include <errno.h>
+#include <gmp.h>
+#include <mpfr.h>
 
 void printUsage(const char *programName) {
   printf("Usage: %s [OPTIONS]\n", programName);
@@ -28,42 +31,180 @@ void printUsage(const char *programName) {
   printf("  the program simply performs the iterative approach.\n");
 }
 
-void processArgs(int argc, char *argv[], int *binary_low, int *binary_high, int *target_time_sec, int *benchmark_flag, int *compare_flag, int *n_value) {
-  *benchmark_flag = 1;
+int calcMaxFib() {
+  const double phi = (1 + sqrt(5)) / 2; // golden ratio
+  return (int) floor(log(ULLONG_MAX * sqrt(5)) / log(phi));
+}
+
+typedef struct {
+  mpz_t a, b, c, d;
+} Matrix2x2;
+
+void matrixInit(Matrix2x2 *m) {
+  mpz_init(m->a);
+  mpz_init(m->b);
+  mpz_init(m->c);
+  mpz_init(m->d);
+}
+
+void matrixSetIdentity(Matrix2x2 *m) {
+  mpz_set_ui(m->a, 1);
+  mpz_set_ui(m->b, 0);
+  mpz_set_ui(m->c, 0);
+  mpz_set_ui(m->d, 1);
+}
+
+void matrixCopy(Matrix2x2 *dest, Matrix2x2 *src) {
+  mpz_set(dest->a, src->a);
+  mpz_set(dest->b, src->b);
+  mpz_set(dest->c, src->c);
+  mpz_set(dest->d, src->d);
+}
+
+void matrixMultiply(Matrix2x2 *result, Matrix2x2 *m1, Matrix2x2 *m2) {
+  Matrix2x2 temp;
+  matrixInit(&temp);
+
+  mpz_mul(temp.a, m1->a, m2->a);
+  mpz_addmul(temp.a, m1->b, m2->c);
+
+  mpz_mul(temp.b, m1->a, m2->b);
+  mpz_addmul(temp.b, m1->b, m2->d);
+
+  mpz_mul(temp.c, m1->c, m2->a);
+  mpz_addmul(temp.c, m1->d, m2->c);
+
+  mpz_mul(temp.d, m1->c, m2->b);
+  mpz_addmul(temp.d, m1->d, m2->d);
+
+  matrixCopy(result, &temp);
+
+  mpz_clear(temp.a);
+  mpz_clear(temp.b);
+  mpz_clear(temp.c);
+  mpz_clear(temp.d);
+}
+
+void matrixPower(Matrix2x2 *result, Matrix2x2 *m, unsigned long long n) {
+  Matrix2x2 temp;
+  matrixInit(&temp);
+  matrixSetIdentity(&temp);
+
+  if (n == 0) {
+    matrixCopy(result, &temp);
+    return;
+  } else if (n == 1) {
+    matrixCopy(result, m);
+    return;
+  }
+
+  matrixPower(result, m, n / 2);
+  matrixMultiply(&temp, result, result);
+
+  if (n % 2 != 0) {
+    matrixMultiply(result, &temp, m);
+  }
+  else {
+    matrixCopy(result, &temp);
+  }
+
+  mpz_clear(temp.a);
+  mpz_clear(temp.b);
+  mpz_clear(temp.c);
+  mpz_clear(temp.d);
+}
+
+void calculateFibonacci(mpz_t fib, unsigned long long n) {
+  if (n == 0) {
+    mpz_set_ui(fib, 0);
+    return;
+  }
+
+  Matrix2x2 base, result;
+  matrixInit(&base);
+  matrixInit(&result);
+
+  // Base matrix [0 1; 1 1]
+  mpz_set_ui(base.a, 0);
+  mpz_set_ui(base.b, 1);
+  mpz_set_ui(base.c, 1);
+  mpz_set_ui(base.d, 1);
+
+  // Compute matrix power
+  matrixPower(&result, &base, n);
+
+  // The result is in the matrix element [0, 1]
+  mpz_set(fib, result.b);
+
+  // Clear matrix elements
+  mpz_clear(base.a);
+  mpz_clear(base.b);
+  mpz_clear(base.c);
+  mpz_clear(base.d);
+  mpz_clear(result.a);
+  mpz_clear(result.b);
+  mpz_clear(result.c);
+  mpz_clear(result.d);
+}
+
+int parseIntArg(char *arg) {
+  errno = 0;
+  char *endptr;
+  long val = strtol(arg, &endptr, 10);
+
+  if (errno != 0 || *endptr != '\0' || val < 0 || val > INT_MAX) {
+    fprintf(stderr, "Invalid integer value: %s\n", arg);
+    exit(1);
+  }
+
+  return (int)val;
+}
+
+void processArgs(int argc, char *argv[], int *binary_low, int *binary_high, int *target_time_sec, int *benchmark_flag, int *compare_flag, long long unsigned int *n_value) {
+  *benchmark_flag = 0;
   *compare_flag = 0;
+
   for (int i = 1; i < argc; i++) {
     if (strcmp(argv[i], "-B") == 0 || strcmp(argv[i], "--benchmark") == 0) {
+      if (*compare_flag) {
+        fprintf(stderr, "Error: -B contains all functionality of -C\n");
+        exit(1);
+      }
       *benchmark_flag = 1;
     }
     else if (strcmp(argv[i], "-C") == 0 || strcmp(argv[i], "--compare") == 0) {
+      if (*benchmark_flag) {
+        fprintf(stderr, "Error: -B contains all functionality of -C\n");
+        exit(1);
+      }
       *compare_flag = 1;
     }
     else if ((strcmp(argv[i], "-L") == 0 || strcmp(argv[i], "--low") == 0) && i + 1 < argc) {
-      if (*benchmark_flag == 0) {
-        printf("Error: -L/--low requires -B/--benchmark.\n");
+      if (!*benchmark_flag) {
+        fprintf(stderr, "Error: -L (--low) requires -B (--benchmark).\n");
         exit(1);
       }
-      *binary_low = atoi(argv[++i]);
+      *binary_low = parseIntArg(argv[++i]);
     }
     else if ((strcmp(argv[i], "-H") == 0 || strcmp(argv[i], "--high") == 0) && i + 1 < argc) {
-      if (*benchmark_flag == 0) {
-        printf("Error: -H/--high requires -B/--benchmark.\n");
+      if (!*benchmark_flag) {
+        fprintf(stderr, "Error: -H(--high) requires -B(--benchmark).\n");
         exit(1);
       }
-      *binary_high = atoi(argv[++i]);
+      *binary_high = parseIntArg(argv[++i]);
     }
     else if ((strcmp(argv[i], "-T") == 0 || strcmp(argv[i], "--time") == 0) && i + 1 < argc) {
-      if (*benchmark_flag == 0) {
-        printf("Error: -T/--time requires -B/--benchmark.\n");
+      if (!*benchmark_flag) {
+        fprintf(stderr, "Error: -T(--time) requires -B(--benchmark).\n");
         exit(1);
       }
-      *target_time_sec = atoi(argv[++i]);
+      *target_time_sec = parseIntArg(argv[++i]);
     }
     else if ((strcmp(argv[i], "-N") == 0 || strcmp(argv[i], "--nvalue") == 0) && i + 1 < argc) {
-      *n_value = atoi(argv[++i]);
+      *n_value = parseIntArg(argv[++i]);
     }
     else {
-      printf("Unknown option: %s\n", argv[i]);
+      fprintf(stderr, "Unknown option: %s\n", argv[i]);
       printUsage(argv[0]);
       exit(1);
     }
@@ -167,10 +308,8 @@ long int fibonacci_iterative(int n) {
   }
 
   // After the shift, 'b' holds the nth Fibonacci number.
-  // Return 'b', which is the requested Fibonacci number.
   return b;
 }
-
 
 int find_n_for_target_time_binary(int low, int high, int target_time_sec, double *cpu_time_used, double *total_time_used, long int *result) {
   int mid;
@@ -264,14 +403,10 @@ void benchmark(int binary_low, int binary_high, int target_time_sec, int n_value
   }
 }
 
-int calcMaxFib() {
-  const double phi = (1 + sqrt(5)) / 2; // golden ratio
-  return (int) floor(log(LONG_MAX * sqrt(5)) / log(phi));
-}
-
 int main(int argc, char *argv[]) {
-  int binary_low = 43, binary_high = 53, target_time_sec = 30, n_value = 51;
+  int binary_low = 43, binary_high = 53, target_time_sec = 30;
   int benchmark_flag = 0, compare_flag = 0;
+  unsigned long long n_value = 51;
 
   processArgs(argc, argv, &binary_low, &binary_high, &target_time_sec, &benchmark_flag, &compare_flag, &n_value);
 
@@ -280,5 +415,13 @@ int main(int argc, char *argv[]) {
   int n_max = calcMaxFib();
   printf("The largest problem size n_max for Fibonacci numbers using long int without overflow is: %d\n", n_max);
 
+  mpz_t fib;
+  mpz_init(fib);
+
+  calculateFibonacci(fib, n_value);
+
+  gmp_printf("Fibonacci number F(%llu) is %Zd\n", n_value, fib);
+
+  mpz_clear(fib);
   return 0;
 }
