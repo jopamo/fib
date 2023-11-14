@@ -6,6 +6,9 @@
 #include <limits.h>
 #include <errno.h>
 #include <gmp.h>
+#include <stdbool.h>
+
+#define MAX_N 10000
 
 void printUsage(const char *programName) {
   printf("Usage: %s [OPTIONS]\n", programName);
@@ -17,21 +20,71 @@ void printUsage(const char *programName) {
   printf("  -L, --low <value>   Set the low bound for binary search. (Requires -B)\n");
   printf("  -H, --high <value>  Set the high bound for binary search. (Requires -B)\n");
   printf("  -T, --time <value>  Set the target time (in seconds) for the search. (Requires -B)\n");
-  printf("  -C, --compare     Run comparison of all three Fibonacci methods for a specified 'n'.\n");
+  printf("  -C, --compare   Run comparison of dynamic and iterative Fibonacci methods for a specified 'n'.\n");
+  printf("  -S, --slow    Include recursive method in comparison. (Use with -C)\n");
   printf("  -N, --nvalue <value> Specify the 'n' value for Fibonacci calculation. (Required for -C)\n");
-  printf("  -h, --help      Show this help message and exit.\n\n");
+  printf("  -h, --help    Show this help message and exit.\n\n");
 
   printf("Description:\n");
   printf("  This program calculates the Fibonacci number for a given value using different methods.\n");
   printf("  The benchmark (-B) option runs a binary search to find an 'n' value for which the recursive\n");
   printf("  Fibonacci calculation takes approximately the specified time. The low, high, and time values\n");
   printf("  are used to control this search. The compare (-C) option compares the results and execution\n");
-  printf("  times of recursive, dynamic, and iterative methods for a specified 'n' value. Without -B or -C,\n");
-  printf("  the program simply performs the iterative approach.\n");
+  printf("  times of dynamic and iterative methods for a specified 'n' value, and includes recursive\n");
+  printf("  method if -S is specified. Without -B or -C, the program simply performs the iterative approach.\n");
+}
+
+void fibonacci_aux(mpz_t result, mpz_t a, mpz_t b, int n, mpz_t memo[], bool initialized[]) {
+  if (n == 0) {
+    mpz_set(result, a);
+    return;
+  }
+
+  if (initialized[n]) {
+    mpz_set(result, memo[n]);
+    return;
+  }
+
+  mpz_t next_a, next_b;
+  mpz_init_set(next_a, b);
+  mpz_init(next_b);
+  mpz_add(next_b, a, b);
+
+  if (n < MAX_N) {
+    mpz_set(memo[n], next_b);
+    initialized[n] = true;
+  }
+
+  fibonacci_aux(result, next_a, next_b, n - 1, memo, initialized);
+
+  mpz_clear(next_a);
+  mpz_clear(next_b);
+}
+
+void fibonacci_recursive(mpz_t result, int n) {
+  static mpz_t memo[MAX_N];
+  static bool initialized[MAX_N] = {false};
+
+  static bool is_first_call = true;
+  if (is_first_call) {
+    for (int i = 0; i < MAX_N; ++i) {
+      initialized[i] = false;
+    }
+    is_first_call = false;
+  }
+
+  mpz_t a, b;
+  mpz_init_set_ui(a, 0);
+  mpz_init_set_ui(b, 1);
+
+  fibonacci_aux(result, a, b, n, memo, initialized);
+
+  mpz_clear(a);
+  mpz_clear(b);
 }
 
 int calcMaxFib() {
-  const double phi = (1 + sqrt(5)) / 2; // golden ratio
+  const double phi = (1 + sqrt(5)) / 2;
   return (int) floor(log(ULLONG_MAX * sqrt(5)) / log(phi));
 }
 
@@ -84,7 +137,7 @@ void matrixMultiply(Matrix2x2 *result, Matrix2x2 *m1, Matrix2x2 *m2) {
   mpz_clear(temp.d);
 }
 
-void matrixPower(Matrix2x2 *result, Matrix2x2 *m, unsigned long long n) {
+void matrixPower(Matrix2x2 *result, Matrix2x2 *m, int n) {
   Matrix2x2 temp;
   matrixInit(&temp);
   matrixSetIdentity(&temp);
@@ -113,37 +166,33 @@ void matrixPower(Matrix2x2 *result, Matrix2x2 *m, unsigned long long n) {
   mpz_clear(temp.d);
 }
 
-void fibonacci_matrix(mpz_t fib, unsigned long long n) {
+void fibonacci_matrix(mpz_t result, int n) {
   if (n == 0) {
-    mpz_set_ui(fib, 0);
+    mpz_set_ui(result, 0);
     return;
   }
 
-  Matrix2x2 base, result;
+  Matrix2x2 base, res;
   matrixInit(&base);
-  matrixInit(&result);
+  matrixInit(&res);
 
-  // Base matrix [0 1; 1 1]
   mpz_set_ui(base.a, 0);
   mpz_set_ui(base.b, 1);
   mpz_set_ui(base.c, 1);
   mpz_set_ui(base.d, 1);
 
-  // Compute matrix power
-  matrixPower(&result, &base, n);
+  matrixPower(&res, &base, n);
 
-  // The result is in the matrix element [0, 1]
-  mpz_set(fib, result.b);
+  mpz_set(result, res.b);
 
-  // Clear matrix elements
   mpz_clear(base.a);
   mpz_clear(base.b);
   mpz_clear(base.c);
   mpz_clear(base.d);
-  mpz_clear(result.a);
-  mpz_clear(result.b);
-  mpz_clear(result.c);
-  mpz_clear(result.d);
+  mpz_clear(res.a);
+  mpz_clear(res.b);
+  mpz_clear(res.c);
+  mpz_clear(res.d);
 }
 
 int parseIntArg(char *arg) {
@@ -159,9 +208,10 @@ int parseIntArg(char *arg) {
   return (int)val;
 }
 
-void processArgs(int argc, char *argv[], int *binary_low, int *binary_high, int *target_time_sec, int *benchmark_flag, int *compare_flag, long long unsigned int *n_value) {
+void processArgs(int argc, char *argv[], int *binary_low, int *binary_high, int *target_time_sec, int *benchmark_flag, int *compare_flag, int *slow_flag, long long unsigned int *n_value) {
   *benchmark_flag = 0;
-  *compare_flag = 0;
+  *compare_flag = 1;
+  *slow_flag = 1;
 
   for (int i = 1; i < argc; i++) {
     if (strcmp(argv[i], "-B") == 0 || strcmp(argv[i], "--benchmark") == 0) {
@@ -177,6 +227,13 @@ void processArgs(int argc, char *argv[], int *binary_low, int *binary_high, int 
         exit(1);
       }
       *compare_flag = 1;
+    }
+    else if (strcmp(argv[i], "-S") == 0 || strcmp(argv[i], "--slow") == 0) {
+      *slow_flag = 1;
+      if (!*compare_flag) {
+        fprintf(stderr, "Error: -S (--slow) requires -C (--compare).\n");
+        exit(1);
+      }
     }
     else if ((strcmp(argv[i], "-L") == 0 || strcmp(argv[i], "--low") == 0) && i + 1 < argc) {
       if (!*benchmark_flag) {
@@ -210,19 +267,18 @@ void processArgs(int argc, char *argv[], int *binary_low, int *binary_high, int 
   }
 }
 
-double measureTime(long int (*func)(int, int, int), int arg1, int arg2, int arg3) {
+double measureTime(void (*fibFunc)(mpz_t, int), int n, mpz_t result) {
   struct timespec start, end;
 
-  // CLOCK_MONOTONIC provides a monotonic time since some arbitrary start point
   clock_gettime(CLOCK_MONOTONIC, &start);
-  func(arg1, arg2, arg3);
+  fibFunc(result, n);
   clock_gettime(CLOCK_MONOTONIC, &end);
 
   double time_taken = end.tv_sec - start.tv_sec;
   time_taken += (end.tv_nsec - start.tv_nsec) / 1e9;
+
   return time_taken;
 }
-
 
 void printTime(double timeInSeconds) {
   if (timeInSeconds >= 1.0) {
@@ -231,12 +287,10 @@ void printTime(double timeInSeconds) {
   }
   // 1e-3 represents 0.001 seconds (1 millisecond)
   else if (timeInSeconds >= 1e-3) {
-    // milliseconds
     printf("%f milliseconds\n", timeInSeconds * 1e3);
   }
   // 1e-6 represents 0.000001 seconds (1 microsecond)
   else if (timeInSeconds >= 1e-6) {
-    // microseconds
     printf("%f microseconds\n", timeInSeconds * 1e6);
   }
   // Assume nanoseconds at this point (1 sec = 1,000,000,000 ns)
@@ -245,76 +299,64 @@ void printTime(double timeInSeconds) {
   }
 }
 
-long int fibonacci_recursive(int n) {
-  // If n is 0 or 1, first two numbers in the Fibonacci sequence are 0 and 1.
-  if (n <= 1)
-    return n;
-
-  // Calls itself twice. Once with (n-1) and once with (n-2), and then adds
-  // the results of these two calls. This is based on the principle that the
-  // nth Fibonacci number is the sum of the (n-1)th and (n-2)th Fibonacci numbers.
-  return fibonacci_recursive(n-1) + fibonacci_recursive(n-2);
-}
-
-long int fibonacci_dynamic(int n) {
-  // If n is 0 or 1, first two numbers in the Fibonacci sequence are 0 and 1.
+void fibonacci_dynamic(mpz_t result, int n) {
+  // Handle the base cases
   if (n <= 1) {
-    return n;
+    mpz_set_ui(result, n);
+    return;
   }
 
-  // Create an array to store Fibonacci numbers up to n. (n+1) to accommodate
-  // all values from 0 to n.
-  long int fib[n+1];
+  mpz_t fib_prev, fib_curr, fib_next;
+  mpz_init_set_ui(fib_prev, 0); // fib[0] = 0
+  mpz_init_set_ui(fib_curr, 1); // fib[1] = 1
+  mpz_init(fib_next);
 
-  // fib[0] is the first Fibonacci number, which is 0.
-  // fib[1] is the second Fibonacci number, which is 1.
-  fib[0] = 0;
-  fib[1] = 1;
-
-  // Start at 2 because the first two Fibonacci numbers are already known.
+  // Calculate the Fibonacci numbers iteratively
   for (int i = 2; i <= n; i++) {
-    // Calculate the ith Fibonacci number.
-    // It is the sum of the two preceding numbers, fib[i-1] and fib[i-2].
-    fib[i] = fib[i-1] + fib[i-2];
+    mpz_add(fib_next, fib_prev, fib_curr); // fib_next = fib_prev + fib_curr
+    mpz_set(fib_prev, fib_curr);       // fib_prev = fib_curr
+    mpz_set(fib_curr, fib_next);       // fib_curr = fib_next
   }
 
-  // nth Fibonacci number
-  return fib[n];
+  // Set the result
+  mpz_set(result, fib_curr);
+
+  // Clear the mpz_t variables
+  mpz_clear(fib_prev);
+  mpz_clear(fib_curr);
+  mpz_clear(fib_next);
 }
 
-
-long int fibonacci_iterative(int n) {
-  // If n is 0 or 1, first two numbers in the Fibonacci sequence are 0 and 1.
+void fibonacci_iterative(mpz_t result, int n) {
   if (n <= 1) {
-    return n;
+    mpz_set_ui(result, n);
+    return;
   }
 
-  // 'a' is initialized to 0 (the 0th Fibonacci number).
-  // 'b' is initialized to 1 (the 1st Fibonacci number).
-  long int a = 0, b = 1;
+  mpz_t a, b, c;
+  mpz_init_set_ui(a, 0);  // a = 0
+  mpz_init_set_ui(b, 1);  // b = 1
+  mpz_init(c);
 
-  // 'c' is tmp
-  long int c;
-
-  // Start at 2 because the first two Fibonacci numbers are already known.
   for (int i = 2; i <= n; i++) {
-    // Next one
-    c = a + b;
+    mpz_add(c, a, b);  // c = a + b
 
-    // Shift values
-    a = b;
-    b = c;
+    mpz_set(a, b);   // a = b
+    mpz_set(b, c);   // b = c
   }
 
-  // After the shift, 'b' holds the nth Fibonacci number.
-  return b;
+  mpz_set(result, b);  // result = b
+
+  mpz_clear(a);
+  mpz_clear(b);
+  mpz_clear(c);
 }
 
-int find_n_for_target_time_binary(int low, int high, int target_time_sec, double *cpu_time_used, double *total_time_used, long int *result) {
+int find_n_for_target_time_binary(int low, int high, int target_time_sec, double *current_time_used, double *total_time_used, mpz_t result) {
   int mid;
   int bestN = low;
   double bestTime = 0.0;
-  *cpu_time_used = 0.0;
+  *current_time_used = 0.0;
 
   clock_t overall_start = clock();
 
@@ -322,7 +364,7 @@ int find_n_for_target_time_binary(int low, int high, int target_time_sec, double
     mid = low + (high - low) / 2;
 
     clock_t start = clock();
-    *result = fibonacci_recursive(mid);
+    fibonacci_recursive(result, mid);
     clock_t end = clock();
 
     double current_time_used = ((double) (end - start)) / CLOCKS_PER_SEC;
@@ -341,86 +383,80 @@ int find_n_for_target_time_binary(int low, int high, int target_time_sec, double
 
   clock_t overall_end = clock();
   *total_time_used = ((double) (overall_end - overall_start)) / CLOCKS_PER_SEC;
-  *cpu_time_used = bestTime;
+  *current_time_used = bestTime;
 
   return bestN;
 }
 
-long int fibonacci_recursive_wrapper(int n, int unused1, int unused2) {
-  return fibonacci_recursive(n);
-}
-
-long int fibonacci_dynamic_wrapper(int n, int unused1, int unused2) {
-  return fibonacci_dynamic(n);
-}
-
-long int fibonacci_iterative_wrapper(int n, int unused1, int unused2) {
-  return fibonacci_iterative(n);
-}
-
-void benchmark(int binary_low, int binary_high, int target_time_sec, int n_value, int benchmark_flag, int compare_flag) {
+void benchmark(int binary_low, int binary_high, int target_time_sec, int n_value, int benchmark_flag, int compare_flag, int slow_flag) {
   int n;
-  long int result_recursive = 0, result_dynamic = 0, result_iterative = 0;
-  double time_taken_recursive = 0.0, time_taken_dynamic = 0.0, time_taken_iterative = 0.0;
 
-  if (benchmark_flag && !compare_flag) {
-    double time_taken_to_find_n;
-    n = find_n_for_target_time_binary(binary_low, binary_high, target_time_sec,
-                      &time_taken_recursive, &time_taken_to_find_n, &result_recursive);
+  double time_taken_recursive = 0.0, time_taken_dynamic = 0.0, time_taken_iterative = 0.0, time_taken_matrix = 0.0;
+  double current_time_used = 0.0, time_taken_to_find_n = 0.0;
+
+  mpz_t result_recursive, result_dynamic, result_iterative, result_matrix;
+  mpz_init(result_recursive);
+  mpz_init(result_dynamic);
+  mpz_init(result_iterative);
+  mpz_init(result_matrix);
+
+  if (benchmark_flag) {
+    n = find_n_for_target_time_binary(binary_low, binary_high, target_time_sec, &current_time_used, &time_taken_to_find_n, result_recursive);
     printf("Time taken to find n (range: low = %d, high = %d) using binary search: ", binary_low, binary_high);
     printTime(time_taken_to_find_n);
+
+    gmp_printf("Recursive Approach:\t n = %d\nResult = %Zd\nTime taken: ", n, result_recursive);
+    printTime(current_time_used);
   }
   else {
     n = n_value;
   }
 
-  result_iterative = fibonacci_iterative(n);
-  time_taken_iterative = measureTime(fibonacci_iterative_wrapper, n, 0, 0);
-  printf("Iterative Approach for n = %d: Result = %ld, Time taken: ", n, result_iterative);
-  printTime(time_taken_iterative);
+  time_taken_matrix = measureTime(fibonacci_matrix, n, result_matrix);
+  gmp_printf("Matrix Approach:\n\tn = %d\n\tResult = %Zd\n\tTime taken: ", n, result_matrix);
+  printTime(time_taken_matrix);
 
-  if (compare_flag && !benchmark_flag) {
-    result_recursive = fibonacci_dynamic(n);
-    time_taken_recursive = measureTime(fibonacci_recursive_wrapper, n, 0, 0);
-  }
+  if (compare_flag || benchmark_flag) {
+    time_taken_iterative = measureTime(fibonacci_iterative, n, result_iterative);
+    gmp_printf("Iterative Approach:\n\tn = %d\n\tResult = %Zd\n\tTime taken: ", n, result_iterative);
+    printTime(time_taken_iterative);
 
-  if (benchmark_flag || compare_flag) {
-    printf("Recursive Approach for n = %d: Result = %ld, Time taken: ", n, result_recursive);
-    printTime(time_taken_recursive);
+    if (slow_flag) {
+      time_taken_recursive = measureTime(fibonacci_recursive, n, result_recursive);
+      gmp_printf("Recursive Approach:\n\tn = %d\n\tResult = %Zd\n\tTime taken: ", n, result_recursive);
+      printTime(time_taken_recursive);
+    }
 
-    result_dynamic = fibonacci_dynamic(n);
-    time_taken_dynamic = measureTime(fibonacci_dynamic_wrapper, n, 0, 0);
-    printf("Dynamic Approach for n = %d: Result = %ld, Time taken: ", n, result_dynamic);
+    time_taken_dynamic = measureTime(fibonacci_dynamic, n, result_dynamic);
+    gmp_printf("Dynamic Approach:\n\tn = %d\n\tResult = %Zd\n\tTime taken: ", n, result_dynamic);
     printTime(time_taken_dynamic);
 
-    if (result_recursive != result_iterative || result_dynamic != result_iterative) {
+    if (mpz_cmp(result_matrix, result_iterative) != 0 || mpz_cmp(result_dynamic, result_iterative) != 0) {
       printf("Warning: Inconsistent results between methods.\n");
     }
     else {
       printf("The results match.\n");
     }
   }
+
+  mpz_clear(result_recursive);
+  mpz_clear(result_dynamic);
+  mpz_clear(result_iterative);
+  mpz_clear(result_matrix);
 }
 
 int main(int argc, char *argv[]) {
-  int binary_low = 43, binary_high = 53, target_time_sec = 30;
-  int benchmark_flag = 0, compare_flag = 0;
-  unsigned long long n_value = 51;
+  int binary_low = 1000, binary_high = 5000, target_time_sec = 30;
+  int benchmark_flag = 0, compare_flag = 0, slow_flag = 0;
+  unsigned long long n_value = 10000;
 
-  processArgs(argc, argv, &binary_low, &binary_high, &target_time_sec, &benchmark_flag, &compare_flag, &n_value);
+  processArgs(argc, argv, &binary_low, &binary_high, &target_time_sec, &benchmark_flag, &compare_flag, &slow_flag, &n_value);
 
-  benchmark(binary_low, binary_high, target_time_sec, n_value, benchmark_flag, compare_flag);
+
+  benchmark(binary_low, binary_high, target_time_sec, n_value, benchmark_flag, compare_flag, slow_flag);
 
   int n_max = calcMaxFib();
-  printf("The largest problem size n_max for Fibonacci numbers using long int without overflow is: %d\n", n_max);
+  printf("\nThe largest problem size n_max for Fibonacci numbers using long int without overflow is: %d\n", n_max);
 
-  mpz_t fib;
-  mpz_init(fib);
-
-  fibonacci_matrix(fib, n_value);
-
-  gmp_printf("Fibonacci number F(%llu) is %Zd\n", n_value, fib);
-
-  mpz_clear(fib);
   return 0;
 }
