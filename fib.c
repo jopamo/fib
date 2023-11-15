@@ -23,7 +23,7 @@ void printUsage(const char *programName) {
   printf("  -L, --low <value>   Set the low bound for binary search. (Requires -B)\n");
   printf("  -H, --high <value>  Set the high bound for binary search. (Requires -B)\n");
   printf("  -T, --time <value>  Set the target time (in seconds) for the search. (Requires -B)\n");
-  printf("  -C, --compare   Run comparison of dynamic and iterative Fibonacci methods for a specified 'n'.\n");
+  printf("  -C, --compare   Run comparison of all the methods for a specified 'n'.\n");
   printf("  -S, --slow  Include recursive method in comparison. (Use with -C)\n");
   printf("  -N, --nvalue <value> Specify the 'n' value for Fibonacci calculation. (Required for -C)\n");
   printf("  -R, --results  Print the results of the Fibonacci calculations.\n");
@@ -37,6 +37,18 @@ void printUsage(const char *programName) {
   printf("  times of dynamic and iterative methods for a specified 'n' value, and includes recursive\n");
   printf("  method if -S is specified. The results option (-R) controls whether calculation results\n");
   printf("  are printed. Without -B, -C, or -R, the program simply performs the iterative approach.\n");
+}
+
+void printDigitCount(mpz_t number) {
+  int digitCount = 0;
+
+  if (mpz_sgn(number) == 0) { // Check if the number is zero
+    digitCount = 1;
+  } else {
+    digitCount = mpz_sizeinbase(number, 10); // Count the digits in base 10
+  }
+
+  printf("The result is %d digits long. (Use -R to print to screen)\n\n", digitCount);
 }
 
 void clearFibMemo() {
@@ -269,63 +281,73 @@ unsigned long long int parseIntArg(char *arg) {
 }
 
 void processArgs(int argc, char *argv[], int *binary_low, int *binary_high,
-                 int *target_time_sec, int *benchmark_flag, int *compare_flag,
-                 int *slow_flag, long long unsigned int *n_value) {
+         int *target_time_sec, int *benchmark_flag, int *compare_flag,
+         int *slow_flag, int *results_flag, unsigned long long int *n_value) {
   *benchmark_flag = 0;
   *compare_flag = 0;
   *slow_flag = 0;
+  *results_flag = 0;
+  int high_flag = 0;
+  int low_flag = 0;
+  int time_flag = 0;
+  int n_flag = 0;
 
   for (int i = 1; i < argc; i++) {
     if (strcmp(argv[i], "-B") == 0 || strcmp(argv[i], "--benchmark") == 0) {
-      if (*compare_flag) {
-        fprintf(stderr, "Error: -B contains all functionality of -C\n");
-        exit(1);
-      }
       *benchmark_flag = 1;
     }
     else if (strcmp(argv[i], "-C") == 0 || strcmp(argv[i], "--compare") == 0) {
-      if (*benchmark_flag) {
-        fprintf(stderr, "Error: -B contains all functionality of -C\n");
-        exit(1);
-      }
       *compare_flag = 1;
     }
     else if (strcmp(argv[i], "-S") == 0 || strcmp(argv[i], "--slow") == 0) {
       *slow_flag = 1;
-      if (!*compare_flag) {
-        fprintf(stderr, "Error: -S (--slow) requires -C (--compare).\n");
-        exit(1);
-      }
     }
     else if ((strcmp(argv[i], "-L") == 0 || strcmp(argv[i], "--low") == 0) && i + 1 < argc) {
-      if (!*benchmark_flag) {
-        fprintf(stderr, "Error: -L (--low) requires -B (--benchmark).\n");
-        exit(1);
-      }
       *binary_low = parseIntArg(argv[++i]);
+      low_flag = 1;
     }
     else if ((strcmp(argv[i], "-H") == 0 || strcmp(argv[i], "--high") == 0) && i + 1 < argc) {
-      if (!*benchmark_flag) {
-        fprintf(stderr, "Error: -H(--high) requires -B(--benchmark).\n");
-        exit(1);
-      }
       *binary_high = parseIntArg(argv[++i]);
+      high_flag = 1;
     }
     else if ((strcmp(argv[i], "-T") == 0 || strcmp(argv[i], "--time") == 0) && i + 1 < argc) {
-      if (!*benchmark_flag) {
-        fprintf(stderr, "Error: -T(--time) requires -B(--benchmark).\n");
-        exit(1);
-      }
       *target_time_sec = parseIntArg(argv[++i]);
+      time_flag = 1;
     }
     else if ((strcmp(argv[i], "-N") == 0 || strcmp(argv[i], "--nvalue") == 0) && i + 1 < argc) {
-      *n_value = parseIntArg(argv[++i]);
+      *n_value = strtoull(argv[++i], NULL, 10);
+      n_flag = 1;
+    }
+    else if (strcmp(argv[i], "-R") == 0 || strcmp(argv[i], "--results") == 0) {
+      *results_flag = 1;
+    }
+    else if (strcmp(argv[i], "-h") == 0 || strcmp(argv[i], "--help") == 0) {
+      printUsage(argv[0]);
+      exit(0);
     }
     else {
       fprintf(stderr, "Unknown option: %s\n", argv[i]);
       printUsage(argv[0]);
       exit(1);
     }
+  }
+
+  // Rule enforcement
+  if (*benchmark_flag && *compare_flag) {
+    fprintf(stderr, "Error: -B (--benchmark) and -C (--compare) cannot be used together.\n");
+    exit(1);
+  }
+  if ((low_flag || high_flag || time_flag) && !*benchmark_flag) {
+    fprintf(stderr, "Error: -L (--low), -H (--high), and -T (--time) require -B (--benchmark).\n");
+    exit(1);
+  }
+  if (*slow_flag && !*compare_flag) {
+    fprintf(stderr, "Error: -S (--slow) requires -C (--compare).\n");
+    exit(1);
+  }
+  if (n_flag && *benchmark_flag) {
+    fprintf(stderr, "Error: -N (--nvalue) cannot be used with -B (--benchmark).\n");
+    exit(1);
   }
 }
 
@@ -493,6 +515,7 @@ void benchmark(int binary_low, int binary_high, int target_time_sec, int n_value
   }
   printf("Matrix Time:\t");
   printTime(time_taken_matrix);
+  printDigitCount(result_matrix); // Call the function here
 
   // Iterative Approach
   if (compare_flag || benchmark_flag) {
@@ -541,7 +564,7 @@ int main(int argc, char *argv[]) {
   int benchmark_flag = 0, compare_flag = 0, slow_flag = 0, results_flag = 0;
   unsigned long long n_value = 1000000;
 
-  processArgs(argc, argv, &binary_low, &binary_high, &target_time_sec, &benchmark_flag, &compare_flag, &slow_flag, &n_value);
+  processArgs(argc, argv, &binary_low, &binary_high, &target_time_sec, &benchmark_flag, &compare_flag, &slow_flag, &results_flag, &n_value);
 
   benchmark(binary_low, binary_high, target_time_sec, n_value, benchmark_flag, compare_flag, slow_flag, results_flag);
 
