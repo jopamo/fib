@@ -1,14 +1,14 @@
+#include <errno.h>
+#include <float.h>
+#include <gmp.h>
+#include <limits.h>
+#include <math.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <time.h>
-#include <math.h>
 #include <string.h>
-#include <limits.h>
-#include <errno.h>
-#include <gmp.h>
-#include <stdbool.h>
-#include <float.h>
 #include <sys/time.h>
+#include <time.h>
 
 #define MAX_N 1000000
 
@@ -92,7 +92,7 @@ void fibIterativeBench(int n) {
   long long a = 0, b = 1;
   for (int i = 2; i <= n; ++i) {
     if (a > LONG_MAX - b) {
-      printf("Long Int Overflow occurred at Fibonacci position: %d\n", i);
+      printf("Long Int Overflow occurred at Fibonacci position: %d\n\n", i);
       return;
     }
 
@@ -103,7 +103,8 @@ void fibIterativeBench(int n) {
 
   if (n <= 1) {
     printf("Fibonacci number at position %d: %lld\n", n, (long long)n);
-  } else {
+  }
+  else {
     printf("Fibonacci number at position %d: %lld\n", n, b);
   }
 }
@@ -203,7 +204,8 @@ void matrixPower(Matrix2x2 *result, Matrix2x2 *m, int n) {
   if (n == 0) {
     matrixCopy(result, &temp);
     return;
-  } else if (n == 1) {
+  }
+  else if (n == 1) {
     matrixCopy(result, m);
     return;
   }
@@ -259,14 +261,16 @@ unsigned long long int parseIntArg(char *arg) {
   long val = strtol(arg, &endptr, 10);
 
   if (errno != 0 || *endptr != '\0' || val < 0 || val > MAX_N) {
-    fprintf(stderr, "Invalid integer value: %s\n", arg);
+    fprintf(stderr, "Please enter a number between 0 and 1000000\n");
     exit(1);
   }
 
   return (int)val;
 }
 
-void processArgs(int argc, char *argv[], int *binary_low, int *binary_high, int *target_time_sec, int *benchmark_flag, int *compare_flag, int *slow_flag, long long unsigned int *n_value) {
+void processArgs(int argc, char *argv[], int *binary_low, int *binary_high,
+                 int *target_time_sec, int *benchmark_flag, int *compare_flag,
+                 int *slow_flag, long long unsigned int *n_value) {
   *benchmark_flag = 0;
   *compare_flag = 0;
   *slow_flag = 0;
@@ -405,13 +409,17 @@ void fibonacci_iterative(mpz_t result, int n) {
   mpz_clear(c);
 }
 
-int find_n_for_target_time_binary(int low, int high, int target_time_sec, double *cpu_time_used, double *total_time_used, unsigned long long int *benchResult) {
+int find_n_for_target_time_binary(int low, int high, int target_time_sec,
+                                  double *cpu_time_used, double *total_time_used,
+                                  unsigned long long int *benchResult) {
   int mid;
   int bestN = low;
   double bestTime = 0.0;
   *cpu_time_used = 0.0;
 
   clock_t overall_start = clock();
+
+  printf("Finding 'n' value using binary search. Please wait...\n");
 
   while (low <= high) {
     mid = low + (high - low) / 2;
@@ -422,7 +430,7 @@ int find_n_for_target_time_binary(int low, int high, int target_time_sec, double
 
     double current_time_used = ((double) (end - start)) / CLOCKS_PER_SEC;
 
-    printf("Low: %d, High: %d, Mid: %d, Time: %f\n", low, high, mid, current_time_used);
+    printf("\tLow: %d, High: %d, Mid: %d, Time: %f\n", low, high, mid, current_time_used);
 
     if (current_time_used <= target_time_sec) {
       if (current_time_used > bestTime) {
@@ -440,11 +448,13 @@ int find_n_for_target_time_binary(int low, int high, int target_time_sec, double
   *total_time_used = ((double) (overall_end - overall_start)) / CLOCKS_PER_SEC;
   *cpu_time_used = bestTime;
 
+  printf("'n' found. Using %d for further runs.\n\n", bestN);
+
   return bestN;
 }
 
 void benchmark(int binary_low, int binary_high, int target_time_sec, int n_value,
-         int benchmark_flag, int compare_flag, int slow_flag, int results_flag) {
+               int benchmark_flag, int compare_flag, int slow_flag, int results_flag) {
   int n;
 
   double time_taken_recursive = 0.0, time_taken_dynamic = 0.0, time_taken_iterative = 0.0, time_taken_matrix = 0.0;
@@ -462,15 +472,18 @@ void benchmark(int binary_low, int binary_high, int target_time_sec, int n_value
     n = find_n_for_target_time_binary(binary_low, binary_high, target_time_sec, &current_time_used, &time_taken_to_find_n, &benchResult);
     printf("Time taken to find n (range: low = %d, high = %d) using binary search: ", binary_low, binary_high);
     printTime(time_taken_to_find_n);
+    printf("\n");
 
     if (results_flag) {
       printf("Recursive Approach (n = %d, Result = %llu): ", n, benchResult);
     }
-    printf("Time taken: ");
+    printf("(n = %d)\n", n);
+    printf("Recursive Time:\t");
     printTime(current_time_used);
   }
   else {
     n = n_value;
+    printf("(n = %d)\n", n);
   }
 
   // Matrix Approach
@@ -478,7 +491,6 @@ void benchmark(int binary_low, int binary_high, int target_time_sec, int n_value
   if (results_flag) {
     gmp_printf("Matrix Approach (n = %d, Result = %Zd): ", n, result_matrix);
   }
-  printf("(n = %d)\n", n);
   printf("Matrix Time:\t");
   printTime(time_taken_matrix);
 
@@ -511,10 +523,10 @@ void benchmark(int binary_low, int binary_high, int target_time_sec, int n_value
 
     // Comparing results
     if (mpz_cmp(result_matrix, result_iterative) != 0 || mpz_cmp(result_dynamic, result_iterative) != 0) {
-      printf("Warning: Inconsistent results between methods.\n");
+      printf("Warning: Inconsistent results between methods.\n\n");
     }
     else {
-      printf("The results match.\n");
+      printf("The results match.\n\n");
     }
   }
 
