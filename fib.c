@@ -208,55 +208,70 @@ void matrixMultiply(Matrix2x2 *result, Matrix2x2 *m1, Matrix2x2 *m2) {
   mpz_clear(temp.d);
 }
 
+// Power of a 2x2 matrix.
 void matrixPower(Matrix2x2 *result, Matrix2x2 *m, int n) {
-  Matrix2x2 temp;
-  matrixInit(&temp);
-  matrixSetIdentity(&temp);
+  Matrix2x2 temp; // Temp matrix
+  matrixInit(&temp); // Initialize
+  matrixSetIdentity(&temp); // Set to the identity matrix.
 
+  // if n is 0, the result is the identity matrix.
   if (n == 0) {
-    matrixCopy(result, &temp);
+    matrixCopy(result, &temp); // Copy the identity matrix to the result.
     return;
   }
+  // if n is 1, the result is the matrix itself.
   else if (n == 1) {
-    matrixCopy(result, m);
+    matrixCopy(result, m); // Copy input matrix to the result.
     return;
   }
 
+  // Compute the matrix raised to n/2.
   matrixPower(result, m, n / 2);
+  // Multiply result of recursion by itself
   matrixMultiply(&temp, result, result);
 
+  // If n is odd, multiply the result by the matrix again.
   if (n % 2 != 0) {
     matrixMultiply(result, &temp, m);
   }
+  // If n is even, just copy the squared matrix to the result.
   else {
     matrixCopy(result, &temp);
   }
 
+  // Clear the mpz_t types
   mpz_clear(temp.a);
   mpz_clear(temp.b);
   mpz_clear(temp.c);
   mpz_clear(temp.d);
 }
 
+
+// nth Fibonacci number using matrix exponentiation.
 void fibonacci_matrix(mpz_t result, int n) {
+  // if n is 0, set the result to 0 and return.
   if (n == 0) {
-    mpz_set_ui(result, 0);
+    mpz_set_ui(result, 0); // Set the result to 0
     return;
   }
 
-  Matrix2x2 base, res;
+  Matrix2x2 base, res; // Declare/init base and the result.
   matrixInit(&base);
   matrixInit(&res);
 
-  mpz_set_ui(base.a, 0);
-  mpz_set_ui(base.b, 1);
-  mpz_set_ui(base.c, 1);
-  mpz_set_ui(base.d, 1);
+  // Setup the base matrix
+  mpz_set_ui(base.a, 0); // Set base[0][0] to 0.
+  mpz_set_ui(base.b, 1); // Set base[0][1] to 1.
+  mpz_set_ui(base.c, 1); // Set base[1][0] to 1.
+  mpz_set_ui(base.d, 1); // Set base[1][1] to 1.
 
+  // Power of the base matrix to the nth term.
   matrixPower(&res, &base, n);
 
-  mpz_set(result, res.b);
+  // n is located at res[0][1] (res.b).
+  mpz_set(result, res.b); // Copy res.b to the result.
 
+  // Clear all
   mpz_clear(base.a);
   mpz_clear(base.b);
   mpz_clear(base.c);
@@ -266,6 +281,7 @@ void fibonacci_matrix(mpz_t result, int n) {
   mpz_clear(res.c);
   mpz_clear(res.d);
 }
+
 
 unsigned long long int parseIntArg(char *arg) {
   errno = 0;
