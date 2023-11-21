@@ -12,31 +12,41 @@
 
 #define MAX_N 1000000
 
+#include <stdio.h>
+
 void printUsage(const char *programName) {
-  printf("Usage: %s [OPTIONS]\n", programName);
-  printf("Example: %s -B -L 40 -H 55 -T 35\n", programName);
-  printf("Example: %s -C -N 50\n", programName);
-  printf("Example: %s -R\n\n", programName);
+  (void) fputs("Usage: ", stdout);
+  (void) fputs(programName, stdout);
+  (void) fputs(" [OPTIONS]\n", stdout);
+  (void) fputs("Example: ", stdout);
+  (void) fputs(programName, stdout);
+  (void) fputs(" -B -L 40 -H 55 -T 35\n", stdout);
+  (void) fputs("Example: ", stdout);
+  (void) fputs(programName, stdout);
+  (void) fputs(" -C -N 50\n", stdout);
+  (void) fputs("Example: ", stdout);
+  (void) fputs(programName, stdout);
+  (void) fputs(" -R\n\n", stdout);
 
-  printf("Options:\n");
-  printf("  -B, --benchmark   Run benchmarking. If set, allows the following options:\n");
-  printf("  -L, --low <value>   Set the low bound for binary search. (Requires -B)\n");
-  printf("  -H, --high <value>  Set the high bound for binary search. (Requires -B)\n");
-  printf("  -T, --time <value>  Set the target time (in seconds) for the search. (Requires -B)\n");
-  printf("  -C, --compare   Run comparison of all the methods for a specified 'n'.\n");
-  printf("  -S, --slow  Include recursive method in comparison. (Use with -C)\n");
-  printf("  -N, --nvalue <value> Specify the 'n' value for Fibonacci calculation. (Required for -C)\n");
-  printf("  -R, --results  Print the results of the Fibonacci calculations.\n");
-  printf("  -h, --help  Show this help message and exit.\n\n");
+  (void) fputs("Options:\n", stdout);
+  (void) fputs("  -B, --benchmark   Run benchmarking. If set, allows the following options:\n", stdout);
+  (void) fputs("  -L, --low <value>   Set the low bound for binary search. (Requires -B)\n", stdout);
+  (void) fputs("  -H, --high <value>  Set the high bound for binary search. (Requires -B)\n", stdout);
+  (void) fputs("  -T, --time <value>  Set the target time (in seconds) for the search. (Requires -B)\n", stdout);
+  (void) fputs("  -C, --compare   Run comparison of all the methods for a specified 'n'.\n", stdout);
+  (void) fputs("  -S, --slow  Include recursive method in comparison. (Use with -C)\n", stdout);
+  (void) fputs("  -N, --nvalue <value> Specify the 'n' value for Fibonacci calculation. (Required for -C)\n", stdout);
+  (void) fputs("  -R, --results  Print the results of the Fibonacci calculations.\n", stdout);
+  (void) fputs("  -h, --help  Show this help message and exit.\n\n", stdout);
 
-  printf("Description:\n");
-  printf("  This program calculates the Fibonacci number for a given value using different methods.\n");
-  printf("  The benchmark (-B) option runs a binary search to find an 'n' value for which the recursive\n");
-  printf("  Fibonacci calculation takes approximately the specified time. The low, high, and time values\n");
-  printf("  are used to control this search. The compare (-C) option compares the results and execution\n");
-  printf("  times of dynamic and iterative methods for a specified 'n' value, and includes recursive\n");
-  printf("  method if -S is specified. The results option (-R) controls whether calculation results\n");
-  printf("  are printed. Without -B, -C, or -R, the program simply performs the iterative approach.\n");
+  (void) fputs("Description:\n", stdout);
+  (void) fputs("  This program calculates the Fibonacci number for a given value using different methods.\n", stdout);
+  (void) fputs("  The benchmark (-B) option runs a binary search to find an 'n' value for which the recursive\n", stdout);
+  (void) fputs("  Fibonacci calculation takes approximately the specified time. The low, high, and time values\n", stdout);
+  (void) fputs("  are used to control this search. The compare (-C) option compares the results and execution\n", stdout);
+  (void) fputs("  times of dynamic and iterative methods for a specified 'n' value, and includes recursive\n", stdout);
+  (void) fputs("  method if -S is specified. The results option (-R) controls whether calculation results\n", stdout);
+  (void) fputs("  are printed. Without -B, -C, or -R, the program simply performs the iterative approach.\n", stdout);
 }
 
 void printDigitCount(mpz_t number) {
