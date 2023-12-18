@@ -1,3 +1,21 @@
+/*
+Programming language: C
+Programmers: Paul Moses
+Repo: https://github.com/jopamo/fib
+
+Date: 12.14.23
+Name of class: CS3130
+
+In this project, we will compare two different algorithms that are used to evaluate
+polynomials. The goal is to understand the importance of the efficiency of an algorithm.
+The first algorithm is the brute force method in which we evaluate polynomials in the
+usual way. The second algorithm uses the Horner’s Rule to evaluate polynomials.
+
+External files: The GNU Multiple Precision Arithmetic Library
+                https://gmplib.org/
+                Commonly packaged as 'gmp', ensure the header gmp.h is around as well
+*/
+
 #include <errno.h>
 #include <float.h>
 #include <gmp.h>
@@ -717,7 +735,6 @@ void benchmark(int binary_low, int binary_high, int target_time_sec, int n_value
 
     // Perform matrix method and print results
     time_taken_matrix = measureTime(fibonacci_matrix, n, result_matrix);
-    printTime(time_taken_matrix);
 
     if (results_flag) printResults("Matrix", n, result_matrix, time_taken_matrix);
 
