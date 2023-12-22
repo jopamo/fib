@@ -735,22 +735,33 @@ void benchmark(int binary_low, int binary_high, int target_time_sec, int n_value
 
     // Perform matrix method and print results
     time_taken_matrix = measureTime(fibonacci_matrix, n, result_matrix);
+    printf("Matrix Approach (n = %d): ", n);
+    printTime(time_taken_matrix);
 
     if (results_flag) printResults("Matrix", n, result_matrix, time_taken_matrix);
 
     // Perform iterative method and print results
     if (compare_flag || benchmark_flag) {
         time_taken_iterative = measureTime(fibonacci_iterative, n, result_iterative);
+        printf("Iterative Approach (n = %d): ", n);
+        printTime(time_taken_iterative);
+
         if (results_flag) printResults("Iterative", n, result_iterative, time_taken_iterative);
 
         // Perform recursive method if slow_flag is set
         if (slow_flag) {
             time_taken_recursive = measureTime(fibonacci_recursive, n, result_recursive);
+            printf("Recursive Approach (n = %d): ", n);
+            printTime(time_taken_recursive);
+
             if (results_flag) printResults("Recursive", n, result_recursive, time_taken_recursive);
         }
 
         // Perform dynamic method and print results
         time_taken_dynamic = measureTime(fibonacci_dynamic, n, result_dynamic);
+        printf("Dynamic Approach (n = %d): ", n);
+        printTime(time_taken_dynamic);
+
         if (results_flag) printResults("Dynamic", n, result_dynamic, time_taken_dynamic);
 
         // Check if results match
@@ -763,6 +774,7 @@ void benchmark(int binary_low, int binary_high, int target_time_sec, int n_value
     mpz_clear(result_iterative);
     mpz_clear(result_matrix);
 }
+
 
 int main(int argc, char *argv[]) {
   int binary_low = 30, binary_high = 55, target_time_sec = 30;
