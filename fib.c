@@ -108,14 +108,14 @@ void clearFibMemo() {
  * @param initialized Array indicating if a particular index in the memo array has been computed.
  */
 void fibonacci_aux(mpz_t result, int n, mpz_t memo[], bool initialized[]) {
-    for (int i = 0; i <= n; ++i) {
-        if (!initialized[i]) {
-            mpz_add(memo[i], memo[i - 1], memo[i - 2]);  // Calculate the Fibonacci number
-            initialized[i] = true;  // Mark as computed
-        }
+  for (int i = 0; i <= n; ++i) {
+    if (!initialized[i]) {
+      mpz_add(memo[i], memo[i - 1], memo[i - 2]);  // Calculate the Fibonacci number
+      initialized[i] = true;  // Mark as computed
     }
+  }
 
-    mpz_set(result, memo[n]);  // Set the result to the nth Fibonacci number
+  mpz_set(result, memo[n]);  // Set the result to the nth Fibonacci number
 }
 
 
@@ -130,21 +130,21 @@ void fibonacci_aux(mpz_t result, int n, mpz_t memo[], bool initialized[]) {
  * @param n The index of the Fibonacci number to compute.
  */
 void fibonacci_recursive(mpz_t result, int n) {
-    static mpz_t memo[MAX_N];  // Array for storing Fibonacci numbers
-    static bool initialized[MAX_N] = {false};  // Array to track initialization status
-    static bool is_first_call = true;  // Flag to check the first function call
+  static mpz_t memo[MAX_N];  // Array for storing Fibonacci numbers
+  static bool initialized[MAX_N] = {false};  // Array to track initialization status
+  static bool is_first_call = true;  // Flag to check the first function call
 
-    // Initialize memoization array on the first call
-    if (is_first_call) {
-        for (int i = 0; i < MAX_N; ++i) {
-            mpz_init(memo[i]);  // Initialize each mpz_t in the array
-            initialized[i] = false;  // Mark as not initialized
-        }
-        is_first_call = false;  // Update the flag after first initialization
+  // Initialize memoization array on the first call
+  if (is_first_call) {
+    for (int i = 0; i < MAX_N; ++i) {
+      mpz_init(memo[i]);  // Initialize each mpz_t in the array
+      initialized[i] = false;  // Mark as not initialized
     }
+    is_first_call = false;  // Update the flag after first initialization
+  }
 
-    // Compute the Fibonacci number using the auxiliary function
-    fibonacci_aux(result, n, memo, initialized);
+  // Compute the Fibonacci number using the auxiliary function
+  fibonacci_aux(result, n, memo, initialized);
 }
 
 
@@ -157,10 +157,10 @@ void fibonacci_recursive(mpz_t result, int n) {
  * @return The Fibonacci number at the given index.
  */
 unsigned long long int fibRecursiveBench(unsigned long long int n) {
-    if (n <= 1) return n;  // Base case: return n for 0 or 1
+  if (n <= 1) return n;  // Base case: return n for 0 or 1
 
-    // Recursive case: sum of the two preceding numbers
-    return fibRecursiveBench(n-1) + fibRecursiveBench(n-2);
+  // Recursive case: sum of the two preceding numbers
+  return fibRecursiveBench(n-1) + fibRecursiveBench(n-2);
 }
 
 
@@ -173,26 +173,26 @@ unsigned long long int fibRecursiveBench(unsigned long long int n) {
  * @param n The index of the Fibonacci number to calculate.
  */
 void fibIterativeBench(int n) {
-    if (n < 0) {
-        printf("Please enter a non-negative integer.\n");  // Validate input
-        return;
+  if (n < 0) {
+    printf("Please enter a non-negative integer.\n");  // Validate input
+    return;
+  }
+
+  long long a = 0, b = 1;  // Initialize first two Fibonacci numbers
+
+  for (int i = 2; i <= n; ++i) {
+    if (a > LONG_MAX - b) {  // Check for overflow
+      printf("Long Int Overflow occurred at Fibonacci position: %d\n\n", i);
+      return;  // Exit if overflow occurs
     }
 
-    long long a = 0, b = 1;  // Initialize first two Fibonacci numbers
+    long long next = a + b;  // Compute next Fibonacci number
+    a = b;  // Update previous number
+    b = next;  // Update current number
+  }
 
-    for (int i = 2; i <= n; ++i) {
-        if (a > LONG_MAX - b) {  // Check for overflow
-            printf("Long Int Overflow occurred at Fibonacci position: %d\n\n", i);
-            return;  // Exit if overflow occurs
-        }
-
-        long long next = a + b;  // Compute next Fibonacci number
-        a = b;  // Update previous number
-        b = next;  // Update current number
-    }
-
-    // Output Fibonacci number for n
-    printf("Fibonacci number at position %d: %lld\n", n, (n <= 1) ? (long long)n : b);
+  // Output Fibonacci number for n
+  printf("Fibonacci number at position %d: %lld\n", n, (n <= 1) ? (long long)n : b);
 }
 
 
@@ -205,10 +205,10 @@ void fibIterativeBench(int n) {
  * @return The maximum index of a Fibonacci number within the long integer range.
  */
 int calcMaxFib() {
-    const double phi = (1 + sqrt(5)) / 2;  // Golden Ratio
+  const double phi = (1 + sqrt(5)) / 2;  // Golden Ratio
 
-    // Calculate and return the maximum Fibonacci index
-    return (int)floor(log((double)LONG_MAX * sqrt(5)) / log(phi));
+  // Calculate and return the maximum Fibonacci index
+  return (int)floor(log((double)LONG_MAX * sqrt(5)) / log(phi));
 }
 
 
@@ -220,22 +220,22 @@ int calcMaxFib() {
  * @return The maximum index of a Fibonacci number that can be calculated without overflow.
  */
 int calcMaxFibIterative() {
-    long a = 0, b = 1;  // Initialize the first two Fibonacci numbers
-    int n = 1;  // Start from index 1
+  long a = 0, b = 1;  // Initialize the first two Fibonacci numbers
+  int n = 1;  // Start from index 1
 
-    while (1) {
-        long c = a + b;  // Compute the next Fibonacci number
+  while (1) {
+    long c = a + b;  // Compute the next Fibonacci number
 
-        // Check for overflow
-        if (c < a || c < b) break;  // Detect overflow and break the loop
+    // Check for overflow
+    if (c < a || c < b) break;  // Detect overflow and break the loop
 
-        // Update Fibonacci numbers for next iteration
-        a = b;
-        b = c;
-        n++;  // Increment index
-    }
+    // Update Fibonacci numbers for next iteration
+    a = b;
+    b = c;
+    n++;  // Increment index
+  }
 
-    return n;  // Return the maximum index found
+  return n;  // Return the maximum index found
 }
 
 
@@ -245,19 +245,20 @@ int calcMaxFibIterative() {
  * then compares and prints the results from both methods.
  */
 void compareFib() {
-    int maxFibIndex1 = calcMaxFib();  // Calculate using formula-based approach
-    int maxFibIndex2 = calcMaxFibIterative();  // Calculate using iterative approach
+  int maxFibIndex1 = calcMaxFib();  // Calculate using formula-based approach
+  int maxFibIndex2 = calcMaxFibIterative();  // Calculate using iterative approach
 
-    // Print results from both methods
-    printf("Long Int Max Fibonacci Index (Method 1): %d\n", maxFibIndex1);
-    printf("Long Int Max Fibonacci Index (Method 2): %d\n", maxFibIndex2);
+  // Print results from both methods
+  printf("Long Int Max Fibonacci Index (Method 1): %d\n", maxFibIndex1);
+  printf("Long Int Max Fibonacci Index (Method 2): %d\n", maxFibIndex2);
 
-    // Compare and print appropriate message
-    if (maxFibIndex1 == maxFibIndex2) {
-        printf("The results match.\n");  // Indicate matching results
-    } else {
-        printf("Warning: Inconsistent results between methods.\n");  // Warn about discrepancy
-    }
+  // Compare and print appropriate message
+  if (maxFibIndex1 == maxFibIndex2) {
+    printf("The results match.\n");  // Indicate matching results
+  }
+  else {
+    printf("Warning: Inconsistent results between methods.\n");  // Warn about discrepancy
+  }
 }
 
 
@@ -518,15 +519,15 @@ double measureTime(void (*fibFunc)(mpz_t, int), int n, mpz_t result) {
  * @param timeInSeconds The time duration to be printed, in seconds.
  */
 void printTime(double timeInSeconds) {
-    if (timeInSeconds >= 1.0) {
-        printf("%f seconds\n", timeInSeconds);  // Print in seconds if >= 1 second
-    } else if (timeInSeconds >= 1e-3) {
-        printf("%f milliseconds\n", timeInSeconds * 1e3);  // Convert to milliseconds
-    } else if (timeInSeconds >= 1e-6) {
-        printf("%f microseconds\n", timeInSeconds * 1e6);  // Convert to microseconds
-    } else {
-        printf("%f nanoseconds\n", timeInSeconds * 1e9);  // Convert to nanoseconds
-    }
+  if (timeInSeconds >= 1.0) {
+    printf("%f seconds\n", timeInSeconds);  // Print in seconds if >= 1 second
+  } else if (timeInSeconds >= 1e-3) {
+    printf("%f milliseconds\n", timeInSeconds * 1e3);  // Convert to milliseconds
+  } else if (timeInSeconds >= 1e-6) {
+    printf("%f microseconds\n", timeInSeconds * 1e6);  // Convert to microseconds
+  } else {
+    printf("%f nanoseconds\n", timeInSeconds * 1e9);  // Convert to nanoseconds
+  }
 }
 
 
@@ -539,29 +540,29 @@ void printTime(double timeInSeconds) {
  * @param n The index of the Fibonacci number to be calculated.
  */
 void fibonacci_dynamic(mpz_t result, int n) {
-    if (n <= 1) {
-        mpz_set_ui(result, n);  // Base case: directly set result for n = 0 or 1
-        return;
-    }
+  if (n <= 1) {
+    mpz_set_ui(result, n);  // Base case: directly set result for n = 0 or 1
+    return;
+  }
 
-    mpz_t *fib_cache = malloc((n + 1) * sizeof(mpz_t));  // Allocate array for Fibonacci numbers
+  mpz_t *fib_cache = malloc((n + 1) * sizeof(mpz_t));  // Allocate array for Fibonacci numbers
 
-    mpz_init_set_ui(fib_cache[0], 0);  // Initialize fib[0]
-    mpz_init_set_ui(fib_cache[1], 1);  // Initialize fib[1]
+  mpz_init_set_ui(fib_cache[0], 0);  // Initialize fib[0]
+  mpz_init_set_ui(fib_cache[1], 1);  // Initialize fib[1]
 
-    // Calculate Fibonacci numbers iteratively
-    for (int i = 2; i <= n; ++i) {
-        mpz_init(fib_cache[i]);  // Initialize current element
-        mpz_add(fib_cache[i], fib_cache[i - 1], fib_cache[i - 2]);  // fib[i] = fib[i-1] + fib[i-2]
-    }
+  // Calculate Fibonacci numbers iteratively
+  for (int i = 2; i <= n; ++i) {
+    mpz_init(fib_cache[i]);  // Initialize current element
+    mpz_add(fib_cache[i], fib_cache[i - 1], fib_cache[i - 2]);  // fib[i] = fib[i-1] + fib[i-2]
+  }
 
-    mpz_set(result, fib_cache[n]);  // Set result to the nth Fibonacci number
+  mpz_set(result, fib_cache[n]);  // Set result to the nth Fibonacci number
 
-    // Clear memory and free the array
-    for (int i = 0; i <= n; ++i) {
-        mpz_clear(fib_cache[i]);
-    }
-    free(fib_cache);
+  // Clear memory and free the array
+  for (int i = 0; i <= n; ++i) {
+    mpz_clear(fib_cache[i]);
+  }
+  free(fib_cache);
 }
 
 
@@ -576,27 +577,27 @@ void fibonacci_dynamic(mpz_t result, int n) {
  * @param n The index of the Fibonacci number to be calculated.
  */
 void fibonacci_iterative(mpz_t result, int n) {
-    if (n <= 1) {
-        mpz_set_ui(result, n);  // Directly set result for n = 0 or 1
-        return;
-    }
+  if (n <= 1) {
+    mpz_set_ui(result, n);  // Directly set result for n = 0 or 1
+    return;
+  }
 
-    mpz_t a, b, c;
-    mpz_init_set_ui(a, 0);  // Initialize a as fib[0]
-    mpz_init_set_ui(b, 1);  // Initialize b as fib[1]
-    mpz_init(c);            // c will store the next Fibonacci number
+  mpz_t a, b, c;
+  mpz_init_set_ui(a, 0);  // Initialize a as fib[0]
+  mpz_init_set_ui(b, 1);  // Initialize b as fib[1]
+  mpz_init(c);      // c will store the next Fibonacci number
 
-    for (int i = 2; i <= n; i++) {
-        mpz_add(c, a, b);  // Calculate next Fibonacci number
-        mpz_set(a, b);     // Shift a to b's position
-        mpz_set(b, c);     // Update b to the new Fibonacci number
-    }
+  for (int i = 2; i <= n; i++) {
+    mpz_add(c, a, b);  // Calculate next Fibonacci number
+    mpz_set(a, b);   // Shift a to b's position
+    mpz_set(b, c);   // Update b to the new Fibonacci number
+  }
 
-    mpz_set(result, b);  // Set the result as the nth Fibonacci number
+  mpz_set(result, b);  // Set the result as the nth Fibonacci number
 
-    mpz_clear(a);  // Free memory allocated for a
-    mpz_clear(b);  // Free memory allocated for b
-    mpz_clear(c);  // Free memory allocated for c
+  mpz_clear(a);  // Free memory allocated for a
+  mpz_clear(b);  // Free memory allocated for b
+  mpz_clear(c);  // Free memory allocated for c
 }
 
 
@@ -614,47 +615,47 @@ void fibonacci_iterative(mpz_t result, int n) {
  * @return The optimal 'n' value found.
  */
 int find_n_for_target_time_binary(int low, int high, int target_time_sec,
-                                  double *cpu_time_used, double *total_time_used,
-                                  unsigned long long int *benchResult) {
-    int mid;  // Middle index for binary search
-    int bestN = low;  // Best 'n' value found so far
-    double bestTime = 0.0;  // Best time closest to target time
+                  double *cpu_time_used, double *total_time_used,
+                  unsigned long long int *benchResult) {
+  int mid;  // Middle index for binary search
+  int bestN = low;  // Best 'n' value found so far
+  double bestTime = 0.0;  // Best time closest to target time
 
-    *cpu_time_used = 0.0;  // Initialize CPU time used
-    clock_t overall_start = clock();  // Start time of overall process
+  *cpu_time_used = 0.0;  // Initialize CPU time used
+  clock_t overall_start = clock();  // Start time of overall process
 
-    printf("Finding 'n' value using binary search. Please wait...\n");
+  printf("Finding 'n' value using binary search. Please wait...\n");
 
-    // Binary search to find optimal 'n' value
-    while (low <= high) {
-        mid = low + (high - low) / 2;
-        clock_t start = clock();
-        *benchResult = fibRecursiveBench(mid);  // Fibonacci calculation at mid index
-        clock_t end = clock();
-        double current_time_used = ((double) (end - start)) / CLOCKS_PER_SEC;
+  // Binary search to find optimal 'n' value
+  while (low <= high) {
+    mid = low + (high - low) / 2;
+    clock_t start = clock();
+    *benchResult = fibRecursiveBench(mid);  // Fibonacci calculation at mid index
+    clock_t end = clock();
+    double current_time_used = ((double) (end - start)) / CLOCKS_PER_SEC;
 
-        printf("\tLow: %d, High: %d, Mid: %d, Time: %f\n", low, high, mid, current_time_used);
+    printf("\tLow: %d, High: %d, Mid: %d, Time: %f\n", low, high, mid, current_time_used);
 
-        // Adjust search bounds based on current time taken
-        if (current_time_used <= target_time_sec + 5) {
-            if (current_time_used > bestTime && current_time_used <= target_time_sec + 5) {
-                bestN = mid;
-                bestTime = current_time_used;
-            }
-            if (current_time_used < target_time_sec) low = mid + 1;
-            else break;
-        } else {
-            high = mid - 1;
-        }
+    // Adjust search bounds based on current time taken
+    if (current_time_used <= target_time_sec + 5) {
+      if (current_time_used > bestTime && current_time_used <= target_time_sec + 5) {
+        bestN = mid;
+        bestTime = current_time_used;
+      }
+      if (current_time_used < target_time_sec) low = mid + 1;
+      else break;
+    } else {
+      high = mid - 1;
     }
+  }
 
-    clock_t overall_end = clock();
-    *total_time_used = ((double) (overall_end - overall_start)) / CLOCKS_PER_SEC;
-    *cpu_time_used = bestTime;
+  clock_t overall_end = clock();
+  *total_time_used = ((double) (overall_end - overall_start)) / CLOCKS_PER_SEC;
+  *cpu_time_used = bestTime;
 
-    printf("'n' found. Using %d for further runs.\n\n", bestN);
+  printf("'n' found. Using %d for further runs.\n\n", bestN);
 
-    return bestN;  // Return the best 'n' value found
+  return bestN;  // Return the best 'n' value found
 }
 
 
@@ -666,12 +667,17 @@ int find_n_for_target_time_binary(int low, int high, int target_time_sec,
  * @param n The index of the Fibonacci number calculated.
  * @param result The calculated Fibonacci number.
  * @param time_taken The time taken to calculate the Fibonacci number.
+ * @param display_full_result Whether or not to display the results.
  */
-void printResults(const char* method, int n, mpz_t result, double time_taken) {
-    printf("%s Approach (n = %d): ", method, n);
+void printResults(const char* method, int n, mpz_t result, double time_taken, int display_full_result) {
+  printf("%s Approach (n = %d): ", method, n);
+
+  if (display_full_result) {
     gmp_printf("Result = %Zd, ", result);
-    printTime(time_taken);
+  }
+  printTime(time_taken);
 }
+
 
 
 /**
@@ -683,11 +689,11 @@ void printResults(const char* method, int n, mpz_t result, double time_taken) {
  * @param dynamicResult The result obtained from the dynamic method.
  */
 void compareResults(mpz_t matrixResult, mpz_t iterativeResult, mpz_t dynamicResult) {
-    if (mpz_cmp(matrixResult, iterativeResult) == 0 && mpz_cmp(matrixResult, dynamicResult) == 0) {
-        printf("The results match.\n\n");
-    } else {
-        printf("Warning: Inconsistent results between methods.\n\n");
-    }
+  if (mpz_cmp(matrixResult, iterativeResult) == 0 && mpz_cmp(matrixResult, dynamicResult) == 0) {
+    printf("The results match.\n\n");
+  } else {
+    printf("Warning: Inconsistent results between methods.\n\n");
+  }
 }
 
 
@@ -706,75 +712,60 @@ void compareResults(mpz_t matrixResult, mpz_t iterativeResult, mpz_t dynamicResu
  * @param results_flag Flag to print the results of calculations.
  */
 void benchmark(int binary_low, int binary_high, int target_time_sec, int n_value,
-               int benchmark_flag, int compare_flag, int slow_flag, int results_flag) {
-    int n;
-    double time_taken_recursive = 0.0, time_taken_dynamic = 0.0,
-           time_taken_iterative = 0.0, time_taken_matrix = 0.0,
-           time_taken_to_find_n = 0.0;
-    unsigned long long int benchResult;
-    mpz_t result_recursive, result_dynamic, result_iterative, result_matrix;
+         int benchmark_flag, int compare_flag, int slow_flag, int results_flag) {
+  int n;
+  double time_taken_recursive = 0.0, time_taken_dynamic = 0.0,
+       time_taken_iterative = 0.0, time_taken_matrix = 0.0,
+       time_taken_to_find_n = 0.0;
+  unsigned long long int benchResult;
+  mpz_t result_recursive, result_dynamic, result_iterative, result_matrix;
 
-    // Initialize GMP variables
-    mpz_init(result_recursive);
-    mpz_init(result_dynamic);
-    mpz_init(result_iterative);
-    mpz_init(result_matrix);
+  // Initialize GMP variables
+  mpz_init(result_recursive);
+  mpz_init(result_dynamic);
+  mpz_init(result_iterative);
+  mpz_init(result_matrix);
 
-    // Benchmarking mode
-    if (benchmark_flag) {
-        // Find 'n' using binary search
-        n = find_n_for_target_time_binary(binary_low, binary_high, target_time_sec, &time_taken_recursive, &time_taken_to_find_n, &benchResult);
-        printf("Time taken to find n using binary search: ");
-        printTime(time_taken_to_find_n);
-        printf("\nRecursive Approach (n = %d): ", n);
-        printTime(time_taken_recursive);
-    } else {
-        // Use provided 'n' value
-        n = n_value;
+  // Benchmarking mode
+  if (benchmark_flag) {
+    // Find 'n' using binary search
+    n = find_n_for_target_time_binary(binary_low, binary_high, target_time_sec, &time_taken_recursive, &time_taken_to_find_n, &benchResult);
+    printf("Time taken to find n using binary search: ");
+    printTime(time_taken_to_find_n);
+    printf("\n");
+    printResults("Recursive", n, result_recursive, time_taken_recursive, results_flag);
+  }
+  else {
+    // Use provided 'n' value
+    n = n_value;
+  }
+
+  // Perform and print results for each method
+  time_taken_matrix = measureTime(fibonacci_matrix, n, result_matrix);
+  printResults("Matrix", n, result_matrix, time_taken_matrix, results_flag);
+
+  if (compare_flag || benchmark_flag) {
+    time_taken_iterative = measureTime(fibonacci_iterative, n, result_iterative);
+    printResults("Iterative", n, result_iterative, time_taken_iterative, results_flag);
+
+    if (slow_flag) {
+      time_taken_recursive = measureTime(fibonacci_recursive, n, result_recursive);
+      printResults("Recursive", n, result_recursive, time_taken_recursive, results_flag);
     }
 
-    // Perform matrix method and print results
-    time_taken_matrix = measureTime(fibonacci_matrix, n, result_matrix);
-    printf("Matrix Approach (n = %d): ", n);
-    printTime(time_taken_matrix);
+    time_taken_dynamic = measureTime(fibonacci_dynamic, n, result_dynamic);
+    printResults("Dynamic", n, result_dynamic, time_taken_dynamic, results_flag);
 
-    if (results_flag) printResults("Matrix", n, result_matrix, time_taken_matrix);
+    // Check if results match
+    compareResults(result_matrix, result_iterative, result_dynamic);
+  }
 
-    // Perform iterative method and print results
-    if (compare_flag || benchmark_flag) {
-        time_taken_iterative = measureTime(fibonacci_iterative, n, result_iterative);
-        printf("Iterative Approach (n = %d): ", n);
-        printTime(time_taken_iterative);
-
-        if (results_flag) printResults("Iterative", n, result_iterative, time_taken_iterative);
-
-        // Perform recursive method if slow_flag is set
-        if (slow_flag) {
-            time_taken_recursive = measureTime(fibonacci_recursive, n, result_recursive);
-            printf("Recursive Approach (n = %d): ", n);
-            printTime(time_taken_recursive);
-
-            if (results_flag) printResults("Recursive", n, result_recursive, time_taken_recursive);
-        }
-
-        // Perform dynamic method and print results
-        time_taken_dynamic = measureTime(fibonacci_dynamic, n, result_dynamic);
-        printf("Dynamic Approach (n = %d): ", n);
-        printTime(time_taken_dynamic);
-
-        if (results_flag) printResults("Dynamic", n, result_dynamic, time_taken_dynamic);
-
-        // Check if results match
-        compareResults(result_matrix, result_iterative, result_dynamic);
-    }
-
-    // Clear GMP variables
-    mpz_clear(result_recursive);
-    mpz_clear(result_dynamic);
-    mpz_clear(result_iterative);
-    mpz_clear(result_matrix);
+  // Clear GMP variables
+  mpz_clear(result_recursive);
+  mpz_clear(result_dynamic);
+  mpz_clear(result_iterative);
+  mpz_clear(result_matrix);
 }
-
 
 int main(int argc, char *argv[]) {
   int binary_low = 30, binary_high = 55, target_time_sec = 30;
