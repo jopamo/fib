@@ -6,15 +6,20 @@ Repo: https://github.com/jopamo/fib
 Date: 12.14.23
 Name of class: CS3130
 
-In this project, we will compare two different algorithms that are used to evaluate
-polynomials. The goal is to understand the importance of the efficiency of an algorithm.
-The first algorithm is the brute force method in which we evaluate polynomials in the
-usual way. The second algorithm uses the Horner’s Rule to evaluate polynomials.
+This program is designed to explore and compare various methods of calculating Fibonacci numbers,
+a classic problem in computational mathematics. It includes different algorithms such as the
+recursive approach, dynamic programming, iterative method, and matrix exponentiation, each
+offering a unique perspective on efficiency and performance. The primary objective is to analyze
+the efficiency of these algorithms, especially when dealing with large indices in the Fibonacci
+sequence. The program also features a benchmarking tool that employs binary search to identify an
+optimal 'n' value for which the recursive calculation approximates a target execution time.
 
 External files: The GNU Multiple Precision Arithmetic Library
                 https://gmplib.org/
-                Commonly packaged as 'gmp', ensure the header gmp.h is around as well
+                Required for handling large numbers, this library should be installed with
+                the header file gmp.h available in the build environment.
 */
+
 
 #include <errno.h>
 #include <float.h>
@@ -81,50 +86,10 @@ void printDigitCount(mpz_t number) {
 }
 
 /**
- * Clears the memoization array used in the Fibonacci calculation.
- * This function iterates over the static arrays used for memoization,
- * clearing the memory allocated for each mpz_t type element that was initialized.
- */
-void clearFibMemo() {
-    static mpz_t memo[MAX_N];  // Array for storing Fibonacci numbers
-    static bool initialized[MAX_N];  // Array to track initialization status
-
-    for (int i = 0; i < MAX_N; ++i) {
-        if (initialized[i]) {
-            mpz_clear(memo[i]);  // Clear memory if element was initialized
-        }
-    }
-}
-
-
-/**
- * Auxiliary function to compute Fibonacci numbers using memoization.
- * This function iteratively calculates Fibonacci numbers up to the nth index,
- * storing each computed number in a memoization array to avoid redundant calculations.
- *
- * @param result The mpz_t variable to store the nth Fibonacci number.
- * @param n The index of the Fibonacci number to compute.
- * @param memo Array of mpz_t types for storing computed Fibonacci numbers.
- * @param initialized Array indicating if a particular index in the memo array has been computed.
- */
-void fibonacci_aux(mpz_t result, int n, mpz_t memo[], bool initialized[]) {
-  for (int i = 0; i <= n; ++i) {
-    if (!initialized[i]) {
-      mpz_add(memo[i], memo[i - 1], memo[i - 2]);  // Calculate the Fibonacci number
-      initialized[i] = true;  // Mark as computed
-    }
-  }
-
-  mpz_set(result, memo[n]);  // Set the result to the nth Fibonacci number
-}
-
-
-
-/**
  * Calculates Fibonacci numbers using a recursive approach with memoization.
- * This function initializes static arrays for memoization on the first call and
- * uses an auxiliary function for the actual computation of the Fibonacci numbers.
- * The memoization technique avoids redundant calculations, enhancing efficiency.
+ * This function initializes static arrays for memoization on the first call,
+ * calculates Fibonacci numbers up to the nth index iteratively to avoid redundant calculations,
+ * and clears the memoization array when no longer needed.
  *
  * @param result The mpz_t variable to store the nth Fibonacci number.
  * @param n The index of the Fibonacci number to compute.
@@ -132,21 +97,38 @@ void fibonacci_aux(mpz_t result, int n, mpz_t memo[], bool initialized[]) {
 void fibonacci_recursive(mpz_t result, int n) {
   static mpz_t memo[MAX_N];  // Array for storing Fibonacci numbers
   static bool initialized[MAX_N] = {false};  // Array to track initialization status
-  static bool is_first_call = true;  // Flag to check the first function call
+  static bool is_first_call = true;  // Flag for first function call
 
   // Initialize memoization array on the first call
   if (is_first_call) {
-    for (int i = 0; i < MAX_N; ++i) {
-      mpz_init(memo[i]);  // Initialize each mpz_t in the array
-      initialized[i] = false;  // Mark as not initialized
+    mpz_init_set_ui(memo[0], 0); // fib[0]
+    mpz_init_set_ui(memo[1], 1); // fib[1]
+    initialized[0] = initialized[1] = true;
+    for (int i = 2; i < MAX_N; ++i) {
+      mpz_init(memo[i]);
+      initialized[i] = false;
     }
-    is_first_call = false;  // Update the flag after first initialization
+    is_first_call = false;
   }
 
-  // Compute the Fibonacci number using the auxiliary function
-  fibonacci_aux(result, n, memo, initialized);
-}
+  // Compute Fibonacci numbers up to the nth index
+  for (int i = 2; i <= n; ++i) {
+    if (!initialized[i]) {
+      mpz_add(memo[i], memo[i - 1], memo[i - 2]); // Calculate Fibonacci number
+      initialized[i] = true; // Mark as computed
+    }
+  }
+  mpz_set(result, memo[n]); // Set the result to the nth Fibonacci number
 
+  // Clear the memoization array
+  for (int i = 0; i < MAX_N; ++i) {
+    if (initialized[i]) {
+      mpz_clear(memo[i]);  // Clear memory if element was initialized
+      initialized[i] = false;
+    }
+  }
+  is_first_call = true; // Reset the flag for re-initialization
+}
 
 
 /**
@@ -419,11 +401,11 @@ unsigned long long int parseIntArg(char *arg) {
   long val = strtol(arg, &endptr, 10);
 
   if (errno != 0 || *endptr != '\0' || val < 0 || val > MAX_N) {
-    fprintf(stderr, "Please enter a number between 0 and 1000000\n");
-    exit(1);
+    fprintf(stderr, "Invalid argument: %s. Please enter a number between 0 and %d\n", arg, MAX_N);
+    exit(EXIT_FAILURE);
   }
 
-  return (int)val;
+  return (unsigned long long int)val;
 }
 
 void processArgs(int argc, char *argv[], int *binary_low, int *binary_high,
@@ -626,7 +608,7 @@ int find_n_for_target_time_binary(int low, int high, int target_time_sec,
 
   printf("Finding 'n' value using binary search. Please wait...\n");
 
-  // Binary search to find optimal 'n' value
+  // Binary search to find the optimal 'n' value
   while (low <= high) {
     mid = low + (high - low) / 2;
     clock_t start = clock();
@@ -638,14 +620,23 @@ int find_n_for_target_time_binary(int low, int high, int target_time_sec,
 
     // Adjust search bounds based on current time taken
     if (current_time_used <= target_time_sec + 5) {
+      // If current time is better than best time but still within target time plus tolerance
       if (current_time_used > bestTime && current_time_used <= target_time_sec + 5) {
-        bestN = mid;
-        bestTime = current_time_used;
+        bestN = mid; // Update bestN with the current middle value
+        bestTime = current_time_used; // Update bestTime with the current time
       }
-      if (current_time_used < target_time_sec) low = mid + 1;
-      else break;
-    } else {
-      high = mid - 1;
+
+      // If current time is less than target time, search higher values
+      if (current_time_used < target_time_sec) {
+        low = mid + 1; // Move the lower bound up to narrow the search
+      }
+      else {
+        break; // Break the loop if current time meets or exceeds target time
+      }
+    }
+    else {
+      // If current time significantly exceeds target time plus tolerance
+      high = mid - 1; // Move the upper bound down to narrow the search
     }
   }
 
@@ -781,8 +772,6 @@ int main(int argc, char *argv[]) {
   fibIterativeBench(100);
 
   compareFib();
-
-  clearFibMemo();
 
   return 0;
 }
